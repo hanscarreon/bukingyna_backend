@@ -11,9 +11,18 @@ class Base(DeclarativeBase):
     pass
 
 
+def _normalize_database_url(url: str) -> str:
+    """Use psycopg v3 driver for Postgres URLs from Supabase/Render."""
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    if url.startswith("postgresql://") and "+psycopg" not in url.split("://", 1)[0]:
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
 def _engine():
     settings = get_settings()
-    url = settings.database_url
+    url = _normalize_database_url(settings.database_url)
     if url.startswith("sqlite:///./"):
         Path("data").mkdir(parents=True, exist_ok=True)
     connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
